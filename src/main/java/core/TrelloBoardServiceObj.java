@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import constants.EndPoints;
 import constants.LabelColour;
+import constants.UserTypes;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -72,8 +73,8 @@ public class TrelloBoardServiceObj {
             return this;
         }
 
-        public ApiRequestBuilder setType(String type) {
-            parameters.put("type", type);
+        public ApiRequestBuilder setType(UserTypes type) {
+            parameters.put("type", type.type);
             return this;
         }
         public ApiRequestBuilder allowBillableGuest(Boolean permission) {

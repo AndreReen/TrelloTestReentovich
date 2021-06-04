@@ -1,8 +1,5 @@
 import beans.*;
-import constants.EndPoints;
-import constants.LabelColour;
-import constants.OwnerCredentials;
-import constants.TestData;
+import constants.*;
 import core.DataProviderForTrello;
 import io.restassured.http.Method;
 import matchers.DefaultColor;
@@ -169,7 +166,7 @@ public class TrelloBoardsSmokeTest {
 
     @Test(dataProviderClass = DataProviderForTrello.class,
             dataProvider = "userRights")
-    public static void addAndRemoveMemberFromBoard(String rights) {
+    public static void addAndRemoveMemberFromBoard(UserTypes rights) {
 
         requestBuilder()
                 .setID(id)

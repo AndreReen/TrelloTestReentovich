@@ -30,9 +30,9 @@ public class DataProviderForTrello {
     @DataProvider
     public Object[][] userRights() {
         return new Object[][]{
-                {userTypes.ADMIN},
-                {userTypes.NORMAL},
-                {userTypes.OBSERVER},
+                {UserTypes.ADMIN},
+                {UserTypes.NORMAL},
+                {UserTypes.OBSERVER},
         };
     }
 
