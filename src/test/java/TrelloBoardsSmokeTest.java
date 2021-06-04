@@ -78,7 +78,7 @@ public class TrelloBoardsSmokeTest {
 
         TrelloBoardCompact boardFromRequest = getBoardCompact(
                 requestBuilder()
-                        .setViewFields(EndPoints.CUSTOM_VIEW)
+                        .setViewFields(ViewFields.NAME, ViewFields.ID_ORGANIZATION, ViewFields.STARRED)
                         .setID(id)
                         .buildRequest().sendRequestPath()
                         .then().assertThat().spec(goodResponseSpecification())

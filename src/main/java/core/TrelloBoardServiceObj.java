@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import constants.EndPoints;
 import constants.LabelColour;
 import constants.UserTypes;
+import constants.ViewFields;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -63,8 +64,8 @@ public class TrelloBoardServiceObj {
             return this;
         }
 
-        public ApiRequestBuilder setViewFields(String[] fields) {
-            parameters.put("fields", Arrays.stream(fields).collect(Collectors.joining(",")));
+        public ApiRequestBuilder setViewFields(ViewFields... fields) {
+            parameters.put("fields", Arrays.stream(fields).map(l->l.field).collect(Collectors.joining(",")));
             return this;
         }
 
