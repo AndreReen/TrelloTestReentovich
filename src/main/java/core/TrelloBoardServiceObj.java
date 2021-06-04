@@ -1,11 +1,10 @@
 package core;
 
-import beans.TrelloBoardCompact;
-import beans.TrelloBoardLabel;
-import beans.TrelloNewBoard;
+import beans.*;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import constants.EndPoints;
+import constants.LabelColour;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -53,35 +52,17 @@ public class TrelloBoardServiceObj {
             return this;
         }
 
-        public ApiRequestBuilder propsAuthorization() {
-            ReadProperties.main();
-            parameters.put("key", ReadProperties.props.get("key"));
-            parameters.put("token", ReadProperties.props.get("token"));
-            return this;
-        }
-
-        public ApiRequestBuilder setKey(String key) {
-            parameters.put("key", key);
-            return this;
-        }
-
-        public ApiRequestBuilder setToken(String token) {
-            parameters.put("token", token);
-            return this;
-        }
-
         public ApiRequestBuilder setName(String name) {
             parameters.put("name", name);
             return this;
         }
 
-        public ApiRequestBuilder setLabelColor(String color) {
-            parameters.put("color", color);
+        public ApiRequestBuilder setLabelColor(LabelColour color) {
+            parameters.put("color", color.colour);
             return this;
         }
 
-        public ApiRequestBuilder setFields(String[] fields) {
-
+        public ApiRequestBuilder setViewFields(String[] fields) {
             parameters.put("fields", Arrays.stream(fields).collect(Collectors.joining(",")));
             return this;
         }
@@ -93,6 +74,10 @@ public class TrelloBoardServiceObj {
 
         public ApiRequestBuilder setType(String type) {
             parameters.put("type", type);
+            return this;
+        }
+        public ApiRequestBuilder allowBillableGuest(Boolean permission) {
+            parameters.put("allowBillableGuest", permission.toString());
             return this;
         }
 
@@ -114,8 +99,11 @@ public class TrelloBoardServiceObj {
 
     public Response sendRequestPath() {
 
-        String pathS = "";
+        ReadProperties.main();
+        parameters.put("key", ReadProperties.props.get("key"));
+        parameters.put("token", ReadProperties.props.get("token"));
 
+        String pathS = "";
         for (String key : path.keySet()) {
             pathS += "{" + key + "}/";
         }
@@ -136,38 +124,47 @@ public class TrelloBoardServiceObj {
                 .build();
     }
 
-    public static List<TrelloBoardCompact> getAllBoards(Response response) {
-        List<TrelloBoardCompact> answers = new Gson()
-                .fromJson(response.asString().trim(), new TypeToken<List<TrelloBoardCompact>>() {
-                }.getType());
-        return answers;
-    }
-
-    public static TrelloBoardCompact getBoardById(Response response) {
+    public static TrelloBoardCompact getBoardCompact(Response response) {
         TrelloBoardCompact answers = new Gson()
                 .fromJson(response.asString().trim(), new TypeToken<TrelloBoardCompact>() {
                 }.getType());
         return answers;
     }
 
-    public static TrelloNewBoard getNewBoard(Response response) {
-        TrelloNewBoard answers = new Gson()
-                .fromJson(response.asString().trim(), new TypeToken<TrelloNewBoard>() {
+    public static TrelloBoardFull getBoardFull(Response response) {
+        TrelloBoardFull answers = new Gson()
+                .fromJson(response.asString().trim(), new TypeToken<TrelloBoardFull>() {
                 }.getType());
         return answers;
     }
 
-    public static List<TrelloBoardLabel> getLabels(Response response) {
+    public static List<TrelloBoardLabel> getAllLabels(Response response) {
         List<TrelloBoardLabel> answers = new Gson()
                 .fromJson(response.asString().trim(), new TypeToken<List<TrelloBoardLabel>>() {
                 }.getType());
         return answers;
     }
 
-    public static String getResultString(Response response) {
-        return response.asString().trim();
+    public static TrelloBoardLabel getLabel(Response response) {
+        TrelloBoardLabel answers = new Gson()
+                .fromJson(response.asString().trim(), new TypeToken<TrelloBoardLabel>() {
+                }.getType());
+        return answers;
     }
 
+    public static FieldValue getField(Response response) {
+        FieldValue answers = new Gson()
+                .fromJson(response.asString().trim(), new TypeToken<FieldValue>() {
+                }.getType());
+        return answers;
+    }
+
+    public static List<BoardMember> getMembers(Response response) {
+        List<BoardMember> answers = new Gson()
+                .fromJson(response.asString().trim(), new TypeToken<List<BoardMember>>() {
+                }.getType());
+        return answers;
+    }
 
     public static ResponseSpecification goodResponseSpecification() {
         return new ResponseSpecBuilder()
@@ -184,5 +181,4 @@ public class TrelloBoardServiceObj {
                 .expectStatusCode(HttpStatus.SC_BAD_REQUEST)
                 .build();
     }
-
 }

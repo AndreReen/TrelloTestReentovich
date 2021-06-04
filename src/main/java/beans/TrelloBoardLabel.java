@@ -83,7 +83,6 @@ public class TrelloBoardLabel {
     public int hashCode() {
         int result = 1;
         result = ((result* 31)+((this.name == null)? 0 :this.name.hashCode()));
-        result = ((result* 31)+((this.id == null)? 0 :this.id.hashCode()));
         result = ((result* 31)+((this.idBoard == null)? 0 :this.idBoard.hashCode()));
         result = ((result* 31)+((this.color == null)? 0 :this.color.hashCode()));
         return result;
@@ -98,7 +97,7 @@ public class TrelloBoardLabel {
             return false;
         }
         TrelloBoardLabel rhs = ((TrelloBoardLabel) other);
-        return (((((this.name == rhs.name)||((this.name!= null)&&this.name.equals(rhs.name)))&&((this.id == rhs.id)||((this.id!= null)&&this.id.equals(rhs.id))))&&((this.idBoard == rhs.idBoard)||((this.idBoard!= null)&&this.idBoard.equals(rhs.idBoard))))&&((this.color == rhs.color)||((this.color!= null)&&this.color.equals(rhs.color))));
+        return (((((this.name == rhs.name)||((this.name!= null)&&this.name.equals(rhs.name))))&&((this.idBoard == rhs.idBoard)||((this.idBoard!= null)&&this.idBoard.equals(rhs.idBoard))))&&((this.color == rhs.color)||((this.color!= null)&&this.color.equals(rhs.color))));
     }
 
 }

@@ -1,140 +1,187 @@
-import beans.TrelloBoardCompact;
-import beans.TrelloBoardLabel;
-import beans.TrelloNewBoard;
+import beans.*;
 import constants.EndPoints;
+import constants.LabelColour;
+import constants.OwnerCredentials;
 import constants.TestData;
-import constants.userTypes;
 import core.DataProviderForTrello;
 import io.restassured.http.Method;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.Test;
+import matchers.DefaultColor;
+import org.apache.http.HttpStatus;
+import org.testng.annotations.*;
+
 import java.util.List;
 
 import static core.TrelloBoardServiceObj.*;
+import static matchers.DefaultColor.defaultColor;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.*;
 
 
 public class TrelloBoardsSmokeTest {
 
     private static String id;
 
-    @BeforeSuite
+    @BeforeMethod()
     public static void setUp() {
-    }
-
-    @Test(priority = 1,
-            dataProviderClass = DataProviderForTrello.class,
-            dataProvider = "nameForBoard")
-    public static void createBoard(String name) {
-        TrelloNewBoard result = getNewBoard(
+        TrelloBoardFull newTestBoard = getBoardFull(
                 requestBuilder()
-                        .propsAuthorization()
-                        .setName(name)
+                        .setName(TestData.SAMPLE_NAME1)
                         .setMethod(Method.POST)
                         .buildRequest()
                         .sendRequestPath());
+        id = newTestBoard.getId();
 
-        id = result.getId();
+        assertThat(id, notNullValue());
     }
 
-    @Test(priority = 2)
+    @AfterMethod()
+    public static void tearDown() {
+        requestBuilder()
+                .setMethod(Method.DELETE)
+                .setID(id)
+                .buildRequest()
+                .sendRequestPath()
+                .then().assertThat()
+                .spec(goodResponseSpecification());
+
+        //assert board is deleted
+        requestBuilder()
+                .setMethod(Method.GET)
+                .setID(id)
+                .buildRequest()
+                .sendRequestPath()
+                .then().assertThat()
+                .statusCode(HttpStatus.SC_NOT_FOUND);
+    }
+
+
+    @Test
     public static void updateBoardName() {
-        requestBuilder()
-                .propsAuthorization()
-                .setName(TestData.SAMPLE_NAME2)
-                .setMethod(Method.PUT)
-                .setID(id)
-                .buildRequest().sendRequestPath()
-                .then().assertThat().spec(goodResponseSpecification())
-                .body(containsString("\"name\":\"sigma\""));
-    }
+        TrelloBoardCompact expectedBoard = new TrelloBoardCompact();
+        expectedBoard.setId(id);
+        expectedBoard.setName(TestData.SAMPLE_NAME2);
 
-    @Test(priority = 3)
-    public static void getBoardByID() {
-        TrelloBoardCompact expected = new TrelloBoardCompact();
-        expected.setId(id);
-        expected.setName(TestData.SAMPLE_NAME2);
-
-        TrelloBoardCompact result = getBoardById(
+        TrelloBoardCompact boardUpatedName = getBoardCompact(
                 requestBuilder()
-                        .propsAuthorization()
-                        .setFields(EndPoints.FIELDS)
+                        .setName(TestData.SAMPLE_NAME2)
+                        .setMethod(Method.PUT)
                         .setID(id)
-                        .buildRequest().sendRequestPath());
+                        .buildRequest().sendRequestPath()
+                        .then().assertThat().spec(goodResponseSpecification())
+                        .extract().response());
 
-        assertThat(result, equalTo(expected));
+        assertThat(boardUpatedName, equalTo(expectedBoard));
     }
 
-    @Test(priority = 4)
-    public static void getFieldOnBoard() {
-        requestBuilder()
-                .propsAuthorization()
-                .setID(id)
-                .setPath(EndPoints.ID_ORGANIZATION)
-                .buildRequest().sendRequestPath()
-                .then().assertThat().spec(goodResponseSpecification()
-                .body(containsString("\"_value\":\"" + TestData.MYORGID + "\"")));
+    @Test
+    public static void getBoardByID() {
+        TrelloBoardCompact expectedBoard = new TrelloBoardCompact();
+        expectedBoard.setId(id);
+        expectedBoard.setName(TestData.SAMPLE_NAME1);
+
+        TrelloBoardCompact boardFromRequest = getBoardCompact(
+                requestBuilder()
+                        .setViewFields(EndPoints.CUSTOM_VIEW)
+                        .setID(id)
+                        .buildRequest().sendRequestPath()
+                        .then().assertThat().spec(goodResponseSpecification())
+                        .extract().response());
+
+        assertThat(boardFromRequest, equalTo(expectedBoard));
     }
 
-    @Test(priority = 5,
-            dataProviderClass = DataProviderForTrello.class,
+
+    //Returns single field ONLY
+    //Uses endpoint to fetch field value
+    @Test(dataProviderClass = DataProviderForTrello.class,
+            dataProvider = "fields")
+    public static void getFieldOnBoard(String field, String value) {
+        FieldValue expectedFieldValue = new FieldValue();
+        expectedFieldValue.setValue(value);
+
+        FieldValue extractedField = getField(
+                requestBuilder()
+                        .setID(id)
+                        .setPath(field)
+                        .buildRequest().sendRequestPath()
+                        .then().assertThat().spec(goodResponseSpecification()).extract().response());
+        assertThat(extractedField, equalTo(expectedFieldValue));
+    }
+
+    @Test(dataProviderClass = DataProviderForTrello.class,
             dataProvider = "dataForLabels")
-    public static void createLabelOnBoard(String name, String label) {
-        requestBuilder()
-                .propsAuthorization()
-                .setLabelColor(label)
+    public static void createLabelOnBoard(String name, LabelColour labelColor) {
+        TrelloBoardLabel labelExpected = new TrelloBoardLabel();
+        labelExpected.setColor(labelColor.colour);
+        labelExpected.setIdBoard(id);
+        labelExpected.setName(name);
+
+        TrelloBoardLabel labelRequested = getLabel(requestBuilder()
+                .setLabelColor(labelColor)
                 .setName(name)
                 .setID(id)
                 .setPath(EndPoints.LABELS)
                 .setMethod(Method.POST)
                 .buildRequest().sendRequestPath()
                 .then().assertThat().spec(goodResponseSpecification())
-                .body(containsString("\"name\":\"" + name + "\""));
+                .extract().response());
+
+        assertThat(labelRequested, equalTo(labelExpected));
     }
 
-    @Test(priority = 6)
+    @Test
     public static void getLabelsOnBoard() {
-        List<TrelloBoardLabel> result = getLabels(
+
+        List<TrelloBoardLabel> labels = getAllLabels(
                 requestBuilder()
-                        .propsAuthorization()
                         .setID(id)
                         .setPath(EndPoints.LABELS)
-                        .buildRequest().sendRequestPath());
+                        .buildRequest().sendRequestPath()
+                        .then().assertThat().spec(goodResponseSpecification())
+                        .extract().response());
 
-        assertThat(result.get(result.size() - 1).getName(), equalTo(TestData.TEST_LABEL));
+        //Assert that there are 6 default labels on board
+        assertThat(labels.size(), equalTo(6));
+        //Assert created labels have default colors
+        for (TrelloBoardLabel label : labels) {
+            assertThat(label, defaultColor());
+        }
     }
 
-    @Test(priority = 7,
-            dataProviderClass = DataProviderForTrello.class,
+    @Test
+    public static void getMembersOnBoard() {
+        BoardMember expectedMember = new BoardMember();
+        expectedMember.setId(OwnerCredentials.ID);
+        expectedMember.setUsername(OwnerCredentials.USERNAME);
+        expectedMember.setFullName(OwnerCredentials.FULL_NAME);
+
+        List<BoardMember> boardMembersActual = getMembers(requestBuilder()
+                .setID(id)
+                .setPath(EndPoints.MEMBERS)
+                .buildRequest().sendRequestPath()
+                .then().assertThat().spec(goodResponseSpecification())
+                .extract().response());
+
+        //Asserting that the only member in the list is the Owner of the board
+        assertThat(boardMembersActual.size(), equalTo(1));
+        assertThat(boardMembersActual.get(0), equalTo(expectedMember));
+    }
+
+    @Test(dataProviderClass = DataProviderForTrello.class,
             dataProvider = "userRights")
-    public static void addMemberToBoard(String rights) {
+    public static void addAndRemoveMemberFromBoard(String rights) {
+
         requestBuilder()
-                .propsAuthorization()
                 .setID(id)
                 .setPath(EndPoints.MEMBERS)
                 .setMemberID(TestData.MEMBER_ID)
                 .setType(rights)
+                .allowBillableGuest(true)
                 .setMethod(Method.PUT)
                 .buildRequest().sendRequestPath()
                 .then().assertThat().spec(goodResponseSpecification());
-    }
 
-    @Test(priority = 8)
-    public static void getMembersOnBoard() {
         requestBuilder()
-                .propsAuthorization()
-                .setID(id)
-                .setPath(EndPoints.MEMBERS)
-                .buildRequest().sendRequestPath()
-                .then().assertThat().spec(goodResponseSpecification());
-    }
-
-    @Test(priority = 9)
-    public static void removeMemberFromBoard() {
-        requestBuilder()
-                .propsAuthorization()
                 .setID(id)
                 .setPath(EndPoints.MEMBERS)
                 .setMemberID(TestData.MEMBER_ID)
@@ -142,19 +189,13 @@ public class TrelloBoardsSmokeTest {
                 .buildRequest().sendRequestPath()
                 .then().assertThat().spec(goodResponseSpecification());
 
-    }
-
-    @Test(priority = 10)
-    public static void deleteBoardTest() {
-        requestBuilder()
-                .propsAuthorization()
-                .setMethod(Method.DELETE)
+        List<BoardMember> boardMembersActual = getMembers(requestBuilder()
                 .setID(id)
-                .buildRequest()
-                .sendRequestPath()
-                .then().assertThat()
-                .spec(goodResponseSpecification()
-                        .body(containsString("{\"_value\":null}")));
+                .setPath(EndPoints.MEMBERS)
+                .buildRequest().sendRequestPath()
+                .then().assertThat().spec(goodResponseSpecification())
+                .extract().response());
 
+        assertThat(boardMembersActual.size(), equalTo(1));
     }
 }
